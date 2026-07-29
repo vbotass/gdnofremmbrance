@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Garden of Remenberance</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            background: #eef2f5;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 22px;
+            color: #b0b0b0;
+            letter-spacing: 4px;
+            z-index: 10;
+        }
+        #info {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: rgba(80, 80, 80, 0.6);
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+        #overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #overlay-box {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 28px 40px;
+            max-width: 520px;
+            width: 90%;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+            color: #1e1e1e;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        #overlay-box h2 {
+            font-weight: 400;
+            font-size: 20px;
+            margin: 0 0 14px 0;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        #overlay-box table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        #overlay-box td {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        #overlay-box td:first-child {
+            color: #555;
+            width: 44%;
+            font-weight: 500;
+        }
+        #overlay-box td:last-child {
+            color: #222;
+        }
+        #overlay-box .note {
+            margin-top: 14px;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+        @media (max-width:500px) {
+            #overlay-box {
+                padding: 20px 18px;
+                font-size: 13px;
+            }
+            #overlay-box table {
+                font-size: 12px;
+            }
+        }
+        #popup {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 50;
+        }
+        #popup.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #popup-content {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            padding: 30px 34px 24px 34px;
+            border-radius: 24px;
+            max-width: 380px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            font-size: 17px;
+            line-height: 1.8;
+            color: #1e1e1e;
+            transform: scale(0.92);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            margin: 20px;
+        }
+        #popup.show #popup-content {
+            transform: scale(1);
+        }
+        #popup-content img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+        #popup-content .text {
+            margin-bottom: 6px;
+        }
+        #popup-close-btn {
+            margin-top: 18px;
+            padding: 8px 32px;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.04);
+            color: #555;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            letter-spacing: 2px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        #popup-close-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+        #door-ui {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            pointer-events: none;
+        }
+        #door-ui.show {
+            display: flex;
+        }
+        #door-ui button {
+            pointer-events: auto;
+            padding: 10px 28px;
+            border: none;
+            border-radius: 40px;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            color: #1e1e1e;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        #door-ui button:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: scale(1.02);
+        }
+        #door-ui .door-prompt {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+            padding: 4px 18px;
+            border-radius: 40px;
+            letter-spacing: 1px;
+        }
+        #door-narrative {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+        }
+        #door-narrative.show {
+            display: flex;
+        }
+        #door-narrative-box {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            padding: 32px 40px;
+            border-radius: 28px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            color: #1e1e1e;
+            font-size: 18px;
+            line-height: 2;
+        }
+        #door-narrative-box .main-text {
+            font-size: 17px;
+            letter-spacing: 0.3px;
+            margin: 6px 0 14px 0;
+        }
+        #door-narrative-box .main-text .line-break {
+            display: block;
+            height: 6px;
+        }
+        #door-narrative-box .choice-area {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        #door-narrative-box .choice-area button {
+            padding: 10px 28px;
+            border: none;
+            border-radius: 40px;
+            font-size: 15px;
+            background: #f0f0f0;
+            color: #333;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            letter-spacing: 0.5px;
+            border: 1px solid #ddd;
+            min-width: 100px;
+        }
+        #door-narrative-box .choice-area button:hover {
+            background: #e4e4e4;
+        }
+        #door-narrative-box .choice-area button.primary {
+            background: #d4c9b8;
+            border-color: #c0b5a4;
+        }
+        #door-narrative-box .choice-area button.primary:hover {
+            background: #c8bdaa;
+        }
+        @media (max-width:500px) {
+            #door-narrative-box {
+                padding: 22px 18px;
+                font-size: 16px;
+            }
+            #door-narrative-box .choice-area {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+        #door-narrative-close-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 59;
+            cursor: pointer;
+            display: none;
+        }
+        #door-narrative-close-area.show {
+            display: block;
+        }
+        #door-inside-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 45;
+            pointer-events: none;
+            color: #1a1a1a;
+            font-size: 52px;
+            font-weight: 300;
+            letter-spacing: 6px;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            opacity: 0;
+            transition: opacity 2s ease, visibility 2s ease;
+            text-shadow: 0 0 60px rgba(255, 255, 255, 0.2);
+            visibility: hidden;
+        }
+        #door-inside-text.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        #door-inside-text.fade {
+            opacity: 0;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">花田正在生长…</div>
+    <div id="info"><span>Garden of Remenberance.</span></div>
+
+    <div id="overlay">
+        <div id="overlay-box" onclick="event.stopPropagation();">
+            <h2>操作指南</h2>
+            <table>
+                <tr><td>双指滑动</td><td>移动视角</td></tr>
+                <tr><td>双指捏合</td><td>缩放视角</td></tr>
+                <tr><td>点击花朵</td><td>查看花</td></tr>
+                <tr><td>左键拖拽</td><td>旋转视角</td></tr>
+                <tr><td>右键拖拽</td><td>平移视角</td></tr>
+                <tr><td>滚轮</td><td>缩放视角</td></tr>
+            </table>
+            <div class="note">点击任意处关闭</div>
+        </div>
+    </div>
+
+    <div id="popup">
+        <div id="popup-content">
+            <div id="popup-text"></div>
+            <button id="popup-close-btn">放回</button>
+        </div>
+    </div>
+
+    <div id="door-ui">
+        <div class="door-prompt">一扇门</div>
+        <button id="door-inspect-btn"> 查看牌子</button>
+    </div>
+
+    <div id="door-narrative-close-area"></div>
+    <div id="door-narrative">
+        <div id="door-narrative-box">
+            <div class="main-text">
+                你好，我们曾经相识。
+                <span class="line-break"></span>
+                我想再次认识你。
+            </div>
+            <div class="choice-area">
+                <button id="door-open-btn" class="primary">打开</button>
+                <button id="door-close-btn" class="primary">不打开</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="door-inside-text">hiii</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.126.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.126.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const flowerData = [
+            { color: 0x87c4ed, content: '啊，淡蓝色的雨。あ、水色の雨...' },
+            { color: 0xffdfba, content: '肥啾！' },
+            { color: 0xffffba, content: '我是冬天出生的孩子。' },
+            { color: 0xbaffc9, content: 'Splatoon！我没有女朋章——😭' },
+            { color: 0xbaedff, content: 'snow on the beach, we are fucking beautiful.' },
+            { color: 0xd4baff, content: '你是夏天出生的孩子。' },
+            { color: 0xffb3e6, content: '我是坏鱿...😛' },
+            { color: 0xffb3e6, content: 'Celery.' },
+            { color: 0xff8b94, content: '#solif' },
+            { color: 0x87c4ed, content: '咕咕嘎嘎！' },
+            { color: 0xffdfba, content: '《成为波伏瓦》' },
+            { color: 0xffffba, content: '汪精卫你这也不抗日啊。' },
+            { color: 0xbaffc9, content: '刁迈乎！' },
+            { color: 0xbaedff, content: 'Alpine的车好看......' },
+            { color: 0xd4baff, content: '鲑鱼' },
+            { color: 0xffb3e6, content: '你是天才吧！' },
+            { color: 0xff8b94, content: '一个暖冬。' },
+            { color: 0xf7dc6f, content: '《梦境图书馆》' },
+            { color: 0x82ccdd, content: '呜→呜↘呜→呜↗...（小鸟。）' },
+            { color: 0xe8a87c, content: '坐在海边的礁石上。' },
+            { color: 0xd5a6bd, content: '（胜利结算）' },
+            { color: 0x87c4ed, content: '夏季限定草莓挞事件。' },
+            { color: 0xffdfba, content: '我还是迪士尼处男。' },
+            { color: 0xffffba, content: '《德米安》' },
+            { color: 0xbaffc9, content: '《荒原狼》' },
+            { color: 0xbaedff, content: '熵变！！！' },
+            { color: 0xd4baff, content: '余韵悠长...' },
+            { color: 0xffb3e6, content: '我们是冠军！' },
+            { color: 0xff8b94, content: '...but who knows？' },
+            { color: 0xf7dc6f, content: '我想暑假再看一遍剧院魅影。' },
+            { color: 0x82ccdd, content: '这里是苏联人的基地！' },
+            { color: 0xe8a87c, content: '相遇却再也见不到的人，这不是美丽的故事。' },
+            { color: 0xd5a6bd, content: '夏日短片...' },
+            { color: 0x87c4ed, content: '夏天的影集。' },
+            { color: 0xffdfba, content: 'take up some summertime.' },
+            { color: 0xffffba, content: 'arsonist, burn down the world to feel its heat.' },
+            { color: 0xbaffc9, content: 'veemo!' },
+            { color: 0xbaedff, content: '我们是美丽的人。' },
+            { color: 0xd4baff, content: '不能吃的东西也可以美味！' },
+            { color: 0xffb3e6, content: 'veeeemo!' },
+            { color: 0xff8b94, content: '蓝莓和樱桃' },
+            { color: 0xf7dc6f, content: 'Molly.' },
+            { color: 0x82ccdd, content: 'Billy' },
+            { color: 0xe8a87c, content: '他的蓝色的眼睛。' },
+            { color: 0xd5a6bd, content: '新加坡的夏天。' },
+            { color: 0x87c4ed, content: '荔枝比橘子好吃' },
+            { color: 0xffdfba, content: '水手服——' },
+            { color: 0xffffba, content: '只是春天' },
+            { color: 0xbaffc9, content: '其实他们都在跟踪我们。' },
+            { color: 0xbaedff, content: '王翔与黑松露味饼干。' },
+            { color: 0xd4baff, content: 'Fujifilm!' },
+            { color: 0xffb3e6, content: 'It is...an artificial dream...' },
+            { color: 0xff8b94, content: '我想去对岸（？' },
+            { color: 0xf7dc6f, content: 'we will be together for life plus 99 years～' },
+            { color: 0x82ccdd, content: 'look into your eyes and the sky is a limit.' },
+            { color: 0xe8a87c, content: '你是走丢的小猫吗——' },
+            { color: 0xd5a6bd, content: '在世界的另一端相遇的二人。' },
+            { color: 0x87c4ed, content: '我的美高生活在哪里...' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/f025d7a0f18d6a15e0737728c03b397b.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/7561971d88e83be4f57cc1c7bc488b57.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/14ee9b552ee912313da4b1c5a1bc2f8b.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/3b1fe2983f3c98cab3981f6474f823ac.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/f6ed6a841572499a0ffb9d6106a9de64.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/1f0fec36f42b29b0e9cee7fdc0396837.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/c3ecd364033e596aa8ed4990114aaf20.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/c09dfdf25013f309e900c26a5890ac0b.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/f1ef6eb9da4331bc7e4269feea829e73.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/6f97b8f776b553340dfa1c548df62822.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/c5400580108f0257d1d268604a6bd044.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/262f40238b128dbf68f45b100200130a.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/ca5b794e88d888f98d2fb46ed655acee.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/6edac64e46be4a8b7e9471ca8d58585a.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/c434552a38b7b944034bb5ceb6d6e395.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/07d55bf4a7154bdb24a6707630acf5cd.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/e5aef9dab0e20fecdc8d1ebb36212439.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/238bc1ff92b03b20f3c5c79804e65a88.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/13d57dcc5be621a99d823f02ab6be01b.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/74324ae7319354461d39ffe61db11cc6.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/87ff6facb65b997857b2aaecd5a101c4.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/87ff6facb65b997857b2aaecd5a101c4.jpg' },
+            { color: 0xffb3ba, image: 'https://bee-reg-ab.imagency.cn/p/e368c970ca5cfea6c2095ae9a4e1ec6b.jpg' },
+        ];
+
+        // 场景
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeef2f5);
+        scene.fog = new THREE.Fog(0xeef2f5, 28, 50);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(7, 5, 13);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 0.8;
+        controls.maxDistance = 45;
+        controls.maxPolarAngle = Math.PI / 2.0;
+        controls.target.set(0, 1.2, 0);
+        controls.update();
+
+        // 灯光
+        const hemi = new THREE.HemisphereLight(0xeef2f5, 0xd4c9b8, 1.2);
+        scene.add(hemi);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambient);
+        const sun = new THREE.DirectionalLight(0xfff5e6, 1.0);
+        sun.position.set(12, 18, 8);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 1024;
+        sun.shadow.mapSize.height = 1024;
+        sun.shadow.camera.near = 0.5;
+        sun.shadow.camera.far = 40;
+        sun.shadow.camera.left = -20;
+        sun.shadow.camera.right = 20;
+        sun.shadow.camera.top = 20;
+        sun.shadow.camera.bottom = -20;
+        scene.add(sun);
+        const fill = new THREE.DirectionalLight(0xc8e7ff, 0.4);
+        fill.position.set(-10, 6, -8);
+        scene.add(fill);
+        const rim = new THREE.DirectionalLight(0xffddbb, 0.2);
+        rim.position.set(-4, 0, 16);
+        scene.add(rim);
+
+        // 地面
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0xf5f7fa,
+            roughness: 0.7,
+            metalness: 0,
+            emissive: 0xf0f5ff,
+            emissiveIntensity: 0.06,
+        });
+        const ground = new THREE.Mesh(new THREE.CircleGeometry(35, 64), groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.02;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // 花朵
+        function createFlower(color) {
+            const group = new THREE.Group();
+            const height = 0.4 + Math.random() * 0.8;
+            const bend = (Math.random() - 0.5) * 0.15;
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(bend * 0.4, height * 0.4, 0),
+                new THREE.Vector3(bend, height * 0.8, 0),
+                new THREE.Vector3(bend, height, 0),
+            ]);
+            const stem = new THREE.Mesh(
+                new THREE.TubeGeometry(curve, 6, 0.02, 4, false),
+                new THREE.MeshStandardMaterial({ color: 0x5a8a5a, roughness: 0.9 })
+            );
+            stem.castShadow = true;
+            group.add(stem);
+            const head = curve.getPoint(1);
+            const petalMat = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.3,
+                metalness: 0.02,
+                side: THREE.DoubleSide,
+                emissive: color,
+                emissiveIntensity: 0.03,
+            });
+            for (let i = 0; i < 4 + Math.floor(Math.random() * 2); i++) {
+                const a = (i / 4) * Math.PI * 2 + Math.random() * 0.2;
+                const p = new THREE.Mesh(new THREE.CircleGeometry(0.08 + Math.random() * 0.04, 5), petalMat);
+                const r = 0.1 + Math.random() * 0.04;
+                p.position.set(
+                    head.x + Math.cos(a) * r,
+                    head.y + 0.03 + Math.random() * 0.02,
+                    head.z + Math.sin(a) * r
+                );
+                p.rotation.x = Math.sin(a) * 0.4 + 0.2;
+                p.rotation.z = Math.cos(a) * 0.4 + 0.2;
+                p.rotation.y = a;
+                p.scale.set(1, 0.6 + Math.random() * 0.4, 1);
+                group.add(p);
+            }
+            const center = new THREE.Mesh(
+                new THREE.SphereGeometry(0.035, 5, 5),
+                new THREE.MeshStandardMaterial({ color: 0xffdd77, emissive: 0xffaa33, emissiveIntensity: 0.1,
+                    roughness: 0.3 })
+            );
+            center.position.set(head.x, head.y + 0.02, head.z);
+            group.add(center);
+            return group;
+        }
+
+        let data = [];
+        const count = 350;
+        while (data.length < count) {
+            for (const d of flowerData) {
+                if (data.length < count) data.push({ ...d });
+            }
+        }
+
+        const flowerGroups = [];
+        const container = new THREE.Group();
+        scene.add(container);
+        data.forEach((d, i) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = 1.8 + Math.sqrt(Math.random()) * 26;
+            const flower = createFlower(d.color || 0xffb3ba);
+            flower.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+            flower.rotation.y = Math.random() * Math.PI * 2;
+            flower.userData.content = d.content || '';
+            flower.userData.image = d.image || '';
+            flowerGroups.push(flower);
+            container.add(flower);
+        });
+
+        // ================================================================
+        // 门
+        // ================================================================
+        const doorGroup = new THREE.Group();
+        doorGroup.position.set(0, 0, 0);
+        scene.add(doorGroup);
+
+        function plasterTex() {
+            const c = document.createElement('canvas');
+            c.width = 256;
+            c.height = 256;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#f5f0eb';
+            ctx.fillRect(0, 0, 256, 256);
+            for (let i = 0; i < 4000; i++) {
+                const x = Math.random() * 256,
+                    y = Math.random() * 256,
+                    r = Math.random() * 2,
+                    a = Math.random() * 0.1;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(180,170,160,${a})`;
+                ctx.fill();
+            }
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(2, 4);
+            return tex;
+        }
+        const tex = plasterTex();
+        const frameMat = new THREE.MeshStandardMaterial({ map: tex, color: 0xf0ece6, roughness: 0.85, metalness: 0 });
+        const doorMat = new THREE.MeshStandardMaterial({ map: tex, color: 0xf0ece6, roughness: 0.8, metalness: 0 });
+
+        const w = 1.4,
+            h = 2.4;
+        const pw = 0.12,
+            pd = 0.12;
+
+        // 门框
+        const left = new THREE.Mesh(new THREE.BoxGeometry(pw, h, pd), frameMat);
+        left.position.set(-w / 2 - pw / 2, h / 2, 0);
+        left.castShadow = true;
+        doorGroup.add(left);
+        const right = new THREE.Mesh(new THREE.BoxGeometry(pw, h, pd), frameMat);
+        right.position.set(w / 2 + pw / 2, h / 2, 0);
+        right.castShadow = true;
+        doorGroup.add(right);
+        const top = new THREE.Mesh(new THREE.BoxGeometry(w + pw * 2, pw, pd), frameMat);
+        top.position.set(0, h + pw / 2, 0);
+        top.castShadow = true;
+        doorGroup.add(top);
+        const bot = new THREE.Mesh(new THREE.BoxGeometry(w + pw * 2, 0.06, pd), frameMat);
+        bot.position.set(0, 0.03, 0);
+        bot.receiveShadow = true;
+        doorGroup.add(bot);
+
+        // 门体
+        const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.05), doorMat);
+        doorMesh.position.set(0, h / 2, 0.05);
+        doorMesh.castShadow = true;
+        const pivot = new THREE.Group();
+        pivot.position.set(-w / 2 - pw / 2 + 0.01, 0, 0);
+        pivot.add(doorMesh);
+        doorMesh.position.set(w / 2 + pw / 2 - 0.01, h / 2, 0.05);
+        doorGroup.add(pivot);
+        const doorState = { pivot, mesh: doorMesh, isOpen: false, targetAngle: 0 };
+
+        // 球体把手
+        const knobMat = new THREE.MeshStandardMaterial({
+            color: 0xc49a6c,
+            roughness: 0.65,
+            metalness: 0.35,
+        });
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12), knobMat);
+        knob.position.set(0.55, 0.1, 0.07);
+        doorMesh.add(knob);
+
+        const baseMat = new THREE.MeshStandardMaterial({
+            color: 0xb08a60,
+            roughness: 0.7,
+            metalness: 0.3,
+        });
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.015, 10), baseMat);
+        base.position.set(0.55, 0.1, 0.05);
+        base.rotation.x = Math.PI / 2;
+        doorMesh.add(base);
+
+        // 告示牌（MC风格，无文字，三条横线）
+        const signGroup = new THREE.Group();
+        signGroup.position.set(0, 0.75, 0.07);
+        doorMesh.add(signGroup);
+
+        const signWoodMat = new THREE.MeshStandardMaterial({
+            color: 0xd4c5a0,
+            roughness: 0.9,
+            metalness: 0,
+        });
+        const board = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.28, 0.025), signWoodMat);
+        board.position.set(0, 0, 0);
+        board.castShadow = true;
+        signGroup.add(board);
+
+        const darkWoodMat = new THREE.MeshStandardMaterial({
+            color: 0x8a7a5a,
+            roughness: 0.9,
+            metalness: 0,
+        });
+        const border = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.32, 0.015), darkWoodMat);
+        border.position.set(0, 0, -0.015);
+        signGroup.add(border);
+
+        const lineMat = new THREE.MeshStandardMaterial({
+            color: 0x5a4a3a,
+            roughness: 0.9,
+            metalness: 0,
+        });
+        for (const yOff of [-0.07, 0, 0.07]) {
+            const line = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.016, 0.005), lineMat);
+            line.position.set(0, yOff, 0.017);
+            signGroup.add(line);
+        }
+
+        // ================================================================
+        // 门交互 (距离调远)
+        // ================================================================
+        const doorUI = document.getElementById('door-ui');
+        const inspectBtn = document.getElementById('door-inspect-btn');
+        let doorOpened = false;
+
+        function checkDoor() {
+            if (doorOpened) { doorUI.classList.remove('show'); return; }
+            const dist = camera.position.distanceTo(new THREE.Vector3(0, 1.2, 0));
+            // 距离小于 12 时显示UI
+            dist < 12 ? doorUI.classList.add('show') : doorUI.classList.remove('show');
+        }
+
+        inspectBtn.addEventListener('click', () => {
+            document.getElementById('door-narrative').classList.add('show');
+            document.getElementById('door-narrative-close-area').classList.add('show');
+            doorUI.classList.remove('show');
+        });
+
+        const narr = document.getElementById('door-narrative');
+        const closeArea = document.getElementById('door-narrative-close-area');
+
+        function closeNarr() {
+            narr.classList.remove('show');
+            closeArea.classList.remove('show');
+            setTimeout(checkDoor, 100);
+        }
+        closeArea.addEventListener('click', closeNarr);
+        document.getElementById('door-close-btn').addEventListener('click', closeNarr);
+
+        const insideText = document.getElementById('door-inside-text');
+        let fadeTimer = null;
+
+        document.getElementById('door-open-btn').addEventListener('click', () => {
+            doorState.targetAngle = -Math.PI / 2.2;
+            doorState.isOpen = true;
+            doorOpened = true;
+
+            if (fadeTimer) { clearTimeout(fadeTimer);
+                fadeTimer = null; }
+            insideText.classList.remove('fade');
+            void insideText.offsetWidth;
+            insideText.classList.add('show');
+            fadeTimer = setTimeout(() => {
+                insideText.classList.remove('show');
+                insideText.classList.add('fade');
+                fadeTimer = null;
+            }, 3000);
+
+            closeNarr();
+            doorUI.classList.remove('show');
+        });
+
+        // ================================================================
+        // 点击检测
+        // ================================================================
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        const clickMeshes = [];
+        flowerGroups.forEach(g => {
+            g.children.forEach(c => { if (c.isMesh) { c.userData.parent = g;
+                    clickMeshes.push(c); } });
+        });
+        const doorClickables = [];
+        doorGroup.children.forEach(c => { if (c.isMesh) doorClickables.push(c); });
+        doorState.mesh.children.forEach(c => { if (c.isMesh) doorClickables.push(c); });
+
+        function onDown(e) {
+            if (e.touches && e.touches.length >= 2) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const cx = e.clientX || (e.touches && e.touches[0].clientX);
+            const cy = e.clientY || (e.touches && e.touches[0].clientY);
+            if (cx == null) return;
+            pointer.x = ((cx - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -((cy - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+
+            const hits = raycaster.intersectObjects(clickMeshes);
+            if (hits.length) {
+                const p = hits[0].object.userData.parent;
+                if (p) { showPopup(p.userData.content || '', p.userData.image || ''); return; }
+            }
+            if (!doorOpened) {
+                const dh = raycaster.intersectObjects(doorClickables);
+                // 点击门体触发查看的距离为 13
+                if (dh.length && camera.position.distanceTo(new THREE.Vector3(0, 1.2, 0)) < 13) {
+                    inspectBtn.click();
+                }
+            }
+        }
+        renderer.domElement.addEventListener('pointerdown', onDown);
+
+        // ================================================================
+        // 弹窗
+        // ================================================================
+        const popup = document.getElementById('popup');
+        const popupText = document.getElementById('popup-text');
+        const closeBtn = document.getElementById('popup-close-btn');
+
+        function showPopup(text, img) {
+            let html = '';
+            if (img) html += `<img src="${img}" />`;
+            if (text) html += `<div class="text">${text}</div>`;
+            if (!text && !img) html = `<div class="text" style="color:#999;">没有留下字迹</div>`;
+            popupText.innerHTML = html;
+            popup.classList.add('show');
+        }
+
+        closeBtn.addEventListener('click', () => {
+            popup.classList.remove('show');
+        });
+
+        // ================================================================
+        // 操作说明
+        // ================================================================
+        document.getElementById('overlay').addEventListener('click', (e) => {
+            e.target.closest('#overlay-box') || document.getElementById('overlay').classList.add('hidden');
+        });
+
+        // ================================================================
+        // 触屏滑动
+        // ================================================================
+        let lastDist = 0,
+            startY = 0;
+        const touchDist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+        renderer.domElement.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) { lastDist = touchDist(e.touches);
+                startY = (e.touches[0].clientY + e.touches[1].clientY) / 2; }
+        }, { passive: true });
+
+        renderer.domElement.addEventListener('touchmove', (e) => {
+            if (e.touches.length !== 2) return;
+            const d = touchDist(e.touches);
+            const y = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            if (Math.abs(d - lastDist) > 8) { lastDist = d; return; }
+            const step = (y - startY) * 0.03;
+            if (Math.abs(step) > 0.02) {
+                const f = new THREE.Vector3(0, 0, -1);
+                f.applyQuaternion(camera.quaternion);
+                f.y = 0;
+                f.normalize();
+                camera.position.add(f.clone().multiplyScalar(Math.min(Math.max(step, -1.8), 1.8)));
+                controls.target.add(f.clone().multiplyScalar(Math.min(Math.max(step, -1.8), 1.8)));
+                controls.update();
+                startY = y;
+                lastDist = d;
+                if (camera.position.y < 0.08) { camera.position.y = 0.08;
+                    controls.target.y = 0.08;
+                    controls.update(); }
+            }
+        }, { passive: true });
+
+        // ================================================================
+        // 自适应
+        // ================================================================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        document.getElementById('loading').style.display = 'none';
+
+        // ================================================================
+        // 动画
+        // ================================================================
+        let clock = new THREE.Clock();
+
+        function animate() {
+            const t = clock.getElapsedTime();
+            flowerGroups.forEach((g, i) => {
+                const o = i * 0.01;
+                g.rotation.x = Math.sin(t * 0.6 + o) * 0.002;
+                g.rotation.z = Math.cos(t * 0.7 + o * 1.2) * 0.0015;
+            });
+
+            const diff = doorState.targetAngle - doorState.pivot.rotation.y;
+            if (Math.abs(diff) > 0.001) doorState.pivot.rotation.y += diff * 0.045;
+            else doorState.pivot.rotation.y = doorState.targetAngle;
+
+            checkDoor();
+            controls.update();
+            if (camera.position.y < 0.08) { camera.position.y = 0.08;
+                controls.target.y = 0.08;
+                controls.update(); }
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        console.log('Garden of Remenberance.');
+    </script>
+</body>
+</html>
